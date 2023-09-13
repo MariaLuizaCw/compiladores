@@ -2,8 +2,10 @@
 // Código em c/c++
 
 #include <iostream>
-string lexema;
 
+using namespace std;
+
+string lexema;
 
 %}
 
@@ -21,22 +23,12 @@ ID      ({LETRA}|{UNDERLINE})({LETRA}|{DIGITO}|{UNDERLINE})*
  
   /* Todas as palavras reservadas devem aparecer antes do padrão do ID */
 "for"                  { lexema = yytext; return _FOR; }
-"<="                   { lexema = yytext; return _MENOR_IGUAL; }
+"<="                   { lexema = yytext; return _MEIG; }
 
 {ID}                   { lexema = yytext; return _ID; }
+{NUM}                 { lexema = yytext; return _INT; }
  
   /* Trata todos os símbolos de um caracter usando o código ASCII */
 .                      { lexema = yytext; return yytext[0]; }
  
 %%
-
-
-
-// int main() {
-//   int token = yylex();
-  
-//   while( token != 0 ) {
-//     cout << "Valor: " << token << ", lexema: " << lexema << endl;
-//     token = yylex();
-//   }
-// }
