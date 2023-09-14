@@ -1,11 +1,4 @@
-$dsa999 == 2.1 + a_b
 
-$dsa999 != 1.2E-4 + a_b
+`
 
-A = 1.2E-4 + 4000
-
-
-$dsa999 <= 1e3 + a_b
-
-FoR If
-
+ wwq hew8321nm sa `
