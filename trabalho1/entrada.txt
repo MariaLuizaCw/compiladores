@@ -1,4 +1,5 @@
-
-`
-
- wwq hew8321nm sa `
+ a = 2; /* 
+ Um  comentario  *  
+ */ 
+ 
+ // outro */

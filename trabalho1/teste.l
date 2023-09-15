@@ -34,22 +34,65 @@ CIFRAO   "$"
 ID      ({LETRA}|{UNDERLINE}|{CIFRAO})({LETRA}|{DIGITO}|{UNDERLINE})*
 FALSOID ({LETRA}|{UNDERLINE}|{CIFRAO})({LETRA}|{CIFRAO}|{DIGITO}|{UNDERLINE})*
 
+BEGING_FORMAT "${"
+END_FORMAT "}"
+HALFFORMAT  ({BEGING_FORMAT}{ID})
+
+
+
+BEGIN_COMENT1 "/*"
+END_COMENT1 "*/"
+BREAKERS [ \n\t\r]
+ANYTHING_NOT_STAR_AND_BAR ([^*/])
+STAR_BUT_NOT_BAR (\*[^\/])
+BAR_BUT_NOT_STAR ([^\*]\/)
+MIDLE ({ANYTHING_NOT_STAR_AND_BAR}|{STAR_BUT_NOT_BAR}|{BAR_BUT_NOT_STAR})*
+COMENT1 ({BEGIN_COMENT1})({MIDLE}|{BREAKERS})({END_COMENT1})
+
+
+
+BEGIN_COMENT2 "//"
+COMENT2 ({BEGIN_COMENT2})(.)*
 
 %% 
 
+{COMENT2}                               {
+                                            lexema = yytext;  
+                                            return _COMENTARIO;
+                                        }
 
-`([^`]|\n)+$\{                         {
+{COMENT1}                               {
+                                            lexema = yytext;  
+                                            return _COMENTARIO;
+                                        }
+
+[`|}]([^$])+/{HALFFORMAT}               {
                                             lexema = yytext;      
-                                            lexema = remove_first_last(lexema, 1, 2);
+                                            lexema = remove_first_last(lexema, 1, 0);
                                             return _STRING2; 
                                         }
 
 
-`([^`]|\n)+\`                           {
+
+
+{HALFFORMAT}                            {
+                                            lexema = yytext;      
+                                            lexema = remove_first_last(lexema, 2, 0);
+                                            return 268; 
+                                        }
+
+\}([^$])+\`                             {
                                             lexema = yytext;      
                                             lexema = remove_first_last(lexema, 1, 1);
                                             return _STRING2; 
                                         }
+
+\`([^{]|\n])+\`                           {
+                                            lexema = yytext;      
+                                            lexema = remove_first_last(lexema, 1, 1);
+                                            return _STRING2; 
+                                        }
+
 
 \'([^']|\\\'|\'\')+\'                   { 
                                             lexema = yytext;      
@@ -63,9 +106,8 @@ FALSOID ({LETRA}|{UNDERLINE}|{CIFRAO})({LETRA}|{CIFRAO}|{DIGITO}|{UNDERLINE})*
                                             lexema = remove_first_last_scapes('\"', lexema);
                                             return _STRING; 
                                         }
- 
- 
-[ \n\r\t"']   { }
+  
+[ \n\r\t"'{}`]   { }
 
 [Ff][Oo][Rr]                       { lexema = yytext; return _FOR; }
 [Ii][Ff]                           { lexema = yytext; return _IF; }
