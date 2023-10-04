@@ -168,10 +168,10 @@ void U(){
                cout <<  "-"  << ' ';
                break;
 
-    case '+' : cout << 0 << ' ';
+    case '+' : 
                casa('+');
                U();
-               cout <<  "+"  << ' ';
+
                break;
     default:
       P();
