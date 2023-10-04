@@ -11,12 +11,14 @@ string lexema;
 
 void casa( int );
 
-enum { ID = 256, NUM, PRINT, FLOAT, STRING };
+enum { ID = 256, NUM, PRINT, FLOAT, STRING, FUNC };
 
 void E();
 void F();
 void T();
 void E_Linha();
+void P();
+void RP();
 void T_Linha();
 
 map<int,string> nome_tokens = {
@@ -33,13 +35,19 @@ LETRA	[A-Za-z_]
 NUM	{DIGITO}+
 ID	{LETRA}({LETRA}|{DIGITO})*
 
+PAREN "("
+FUNC	{LETRA}({LETRA}|{DIGITO})*
+
 %%
 
 {WS}  		{ }
 
 "print" { lexema = yytext;  return PRINT;}
 {NUM} 	{ lexema = yytext;  return NUM; }
+
 {ID}		{ lexema = yytext;  return ID; }
+
+{ID}/{PAREN} { lexema = yytext; return FUNC;}
 
 
 \"([^"]|\\\"|\"\")+\"       { 
@@ -82,10 +90,20 @@ void casa( int esperado ) {
   }
 }
 
+void ARGS(){
+  E();
+  if(token == ','){
+    casa(',');
+    ARGS();
+  }
+}
+
+
 
 void F() {
+  string terminal  = lexema;
   switch( token ) {
-    case ID: cout << lexema << ' ';
+    case ID: cout << lexema << " @ ";
              casa( ID );
              break;
            
@@ -99,11 +117,46 @@ void F() {
     case STRING: cout << lexema << ' ';
             casa( STRING );
             break;    
+    case FUNC:
+          casa(FUNC);
+          casa('(');
+          ARGS();
+          casa(')');
+          cout << terminal << " # ";
+          break;
     case '(' : casa( '(' );
              E();
              casa( ')' );
              break;
   }
+}
+
+
+void FAT_LINHA(){
+  if (token == '!'){
+    casa('!');
+    cout << "fat # ";
+    FAT_LINHA();
+  }
+}
+
+void FAT(){
+  F();
+  FAT_LINHA();
+}
+
+
+void RP(){
+  if(token == '^'){
+    casa('^');
+    P();
+    cout << "power # ";
+  }
+}
+
+void P(){
+  FAT();
+  RP();
 }
 
 
@@ -121,7 +174,7 @@ void U(){
                cout <<  "+"  << ' ';
                break;
     default:
-      F();
+      P();
   }
 
 }

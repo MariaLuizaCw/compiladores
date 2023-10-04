@@ -81,7 +81,21 @@ T' -> * U print("*") T'
 
 U -> print("0")  -U  print("-")
      print("0")  +U  print("+")
-     F
+     P
+
+P -> FAT RP
+
+RP -> ^P  print("^")
+     | vazio
+
+ 
+FAT -> FAT!  print("fat #")
+     | F
+
+FAT -> F FAT'
+
+FAT' ->  ! print("fat #") FAT'
+     | vazio
 
 
 F -> print("lexema @") ID  
