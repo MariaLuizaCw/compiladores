@@ -85,6 +85,20 @@ void cmd_if_else(Atributos& ss, Atributos& s_cond, Atributos& s_false, Atributos
     
 }
 
+void cmd_if_no_else(Atributos& ss, Atributos& s_cond, Atributos& s_true){
+
+    string lbl_true = gera_label( "lbl_true" );
+    string lbl_fim_if = gera_label( "lbl_fim_if" );
+    string definicao_lbl_true = ":" + lbl_true;
+    string definicao_lbl_fim_if = ":" + lbl_fim_if;
+    ss.c = s_cond.c +                          // Codigo da expressão
+    lbl_true + "?" +                   // Código do IF
+    lbl_fim_if + "#" +    // Código do False
+    definicao_lbl_true + s_true.c +  // Código do True
+    definicao_lbl_fim_if;           // Fim do IF
+
+}
+
 
 
 void cmd_for(Atributos& ss, Atributos& s_dec, Atributos& s_cond, Atributos& s_cmd, Atributos& s_it){
@@ -105,7 +119,7 @@ void cmd_for(Atributos& ss, Atributos& s_dec, Atributos& s_cond, Atributos& s_cm
 
 %}
 
-%token ID IF ELSE LET PRINT FOR MAIS_IGUAL
+%token ID IF ELSE LET PRINT FOR
 %token CDOUBLE CSTRING CINT
 %token AND OR ME_IG MA_IG DIF IGUAL
 %token MAIS_IGUAL MAIS_MAIS
@@ -136,10 +150,7 @@ CMD : CMD_LET ';'
     | '{' CMDs '}' {$$.c = $2.c;}
     ;
  
-CMD_FOR : FOR '(' PRIM_E ';' E ';' E ')' CMD 
-        { 
-            cmd_for($$, $3, $5, $9, $7);
-        }
+CMD_FOR : FOR '(' PRIM_E ';' E ';' E ')' CMD  { cmd_for($$, $3, $5, $9, $7); }
         ;
 
 PRIM_E : CMD_LET 
@@ -158,28 +169,23 @@ VAR : ID                { $$.c = $1.c + "&"; }
     | ID '=' '{' '}'    { $$.c = $1.c + "&" +  $1.c +  vector<string>{"{}"} + "=" + "^";} 
     ;
      
-CMD_IF : IF '(' E ')' CMD ELSE CMD
-         {       
-            cmd_if_else($$, $3, $7, $5);
-         }
+CMD_IF : IF '(' E ')' CMD           { cmd_if_no_else($$, $3, $5); }
+       | IF '(' E ')' CMD ELSE CMD  { cmd_if_else($$, $3, $7, $5); }
        ;
         
 LVALUE : ID 
        ;
        
-LVALUEPROP : E '[' E ']'
-           | E '.' ID
+LVALUEPROP : E '[' E ']' { $$.c = $1.c + $3.c;}
+           | E '.' ID    { $$.c = $1.c + $3.c;}
            ;
 
-// RVALUE : '{' '}' {$$.c = vector<string>{"{}"};}
-//        | '[' ']' {$$.c = vector<string>{"[]"};}
-//        ;
 
 
 
 E : LVALUE '=' E        { $$.c = $1.c + $3.c + "="; }
-  | LVALUE '=' '{' '}'  { $$.c = $1.c + vector<string>{"{}"} + "=";} 
-  | LVALUEPROP '=' E 	
+  | LVALUE '=' '{' '}'  { $$.c = $1.c + vector<string>{"{}"} + "="; } 
+  | LVALUEPROP '=' E    { $$.c = $1.c + $3.c + "[=]"; }
   | LVALUE MAIS_IGUAL E { $$.c = $1.c + $1.c +  "@" + $3.c +  "+" + "=";}
   | E '<' E             { $$.c = $1.c + $3.c + $2.c; }
   | E '>' E             { $$.c = $1.c + $3.c + $2.c; }
@@ -188,13 +194,15 @@ E : LVALUE '=' E        { $$.c = $1.c + $3.c + "="; }
   | E '*' E             { $$.c = $1.c + $3.c + $2.c; }
   | E '/' E             { $$.c = $1.c + $3.c + $2.c; }
   | E '%' E             { $$.c = $1.c + $3.c + $2.c; }
+  | E IGUAL E           { $$.c = $1.c + $3.c + $2.c; }
+  | '-' E               { $$.c = "0" + $2.c + "-"; }
+  | LVALUE MAIS_MAIS    { $$.c = $1.c +  ((($1.c + "@") + "1") + "+" )+ "="; }
   | CDOUBLE
   | '[' ']'             {$$.c = vector<string>{"[]"};}
   | CINT
   | CSTRING
-  | LVALUE 
-    { $$.c = $1.c + "@"; } 
-  | LVALUEPROP
+  | LVALUE              { $$.c = $1.c + "@"; } 
+  | LVALUEPROP          {$$.c = $1.c + "[@]";}
   | '(' E ')'           { $$.c = $2.c; }
   ;
   

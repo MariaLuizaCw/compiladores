@@ -351,8 +351,8 @@ static void yynoreturn yy_fatal_error ( const char* msg  );
 	(yy_hold_char) = *yy_cp; \
 	*yy_cp = '\0'; \
 	(yy_c_buf_p) = yy_cp;
-#define YY_NUM_RULES 24
-#define YY_END_OF_BUFFER 25
+#define YY_NUM_RULES 23
+#define YY_END_OF_BUFFER 24
 /* This struct is not used in this scanner,
    but its presence is necessary. */
 struct yy_trans_info
@@ -362,12 +362,12 @@ struct yy_trans_info
 	};
 static const flex_int16_t yy_accept[62] =
     {   0,
-        0,    0,   25,   23,    1,    3,    2,   23,   23,   23,
-       23,   23,    5,   23,   23,   23,   22,   22,   22,   22,
-       22,   22,   23,   12,    0,    0,    0,    8,    0,    0,
-        0,   16,   14,    0,    5,   10,   13,   11,   22,   22,
-       22,   18,   22,   22,    9,    6,    6,    7,    7,    4,
-       22,   21,   17,   22,    0,   19,   22,    0,    4,   20,
+        0,    0,   24,   22,    1,    3,    2,   22,   22,   22,
+       22,   22,    5,   22,   22,   22,   21,   21,   21,   21,
+       21,   21,   22,   12,    0,    0,    0,    8,    0,    0,
+        0,   15,   14,    0,    5,   10,   13,   11,   21,   21,
+       21,   17,   21,   21,    9,    6,    6,    7,    7,    4,
+       21,   20,   16,   21,    0,   18,   21,    0,    4,   19,
         0
     } ;
 
@@ -831,60 +831,55 @@ YY_RULE_SETUP
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 31 "tp3.l"
-{ return token( ADD_ASSIGN ); }
+#line 32 "tp3.l"
+{ return token( MAIS_IGUAL ); }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
 #line 33 "tp3.l"
-{ return token( MAIS_IGUAL ); }
+{ return token( MAIS_MAIS ); }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 34 "tp3.l"
-{ return token( MAIS_MAIS ); }
+#line 35 "tp3.l"
+{ return token( LET ); }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
 #line 36 "tp3.l"
-{ return token( LET ); }
+{ return token( IF ); }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
 #line 37 "tp3.l"
-{ return token( IF ); }
+{ return token( ELSE ); }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
 #line 38 "tp3.l"
-{ return token( ELSE ); }
+{ return token( PRINT ); }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
 #line 39 "tp3.l"
-{ return token( PRINT ); }
+{ return token( FOR ); }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 40 "tp3.l"
-{ return token( FOR ); }
+#line 41 "tp3.l"
+{ return token( ID ); }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 42 "tp3.l"
-{ return token( ID ); }
+#line 43 "tp3.l"
+{ return token( *yytext ); }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 44 "tp3.l"
-{ return token( *yytext ); }
-	YY_BREAK
-case 24:
-YY_RULE_SETUP
-#line 46 "tp3.l"
+#line 45 "tp3.l"
 ECHO;
 	YY_BREAK
-#line 888 "lex.yy.c"
+#line 883 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1889,7 +1884,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 46 "tp3.l"
+#line 45 "tp3.l"
 
 
 int token( int tk ) {  

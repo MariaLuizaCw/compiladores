@@ -1,2 +1,3 @@
-let a = 4, b = 5, c, d;
-print a++;
+let a = "ABA", c = 'CATE', resultado;
+if( a == c )
+  resultado = "Ta' errado!";
