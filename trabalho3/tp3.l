@@ -37,6 +37,7 @@ ID      {L}({L}|{D})*
 "else"     { return token( ELSE ); }
 "print"    { return token( PRINT ); }
 "for"      { return token( FOR ); }
+"while"      { return token( WHILE ); }
 
 {ID}       { return token( ID ); }
 

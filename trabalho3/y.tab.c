@@ -72,10 +72,24 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <exception>
 
 using namespace std;
 
 int linha = 1, coluna = 1; 
+
+enum TipoDecl { DeclVar, DeclConst, DeclLet };
+
+struct Var {
+  int linha, coluna;
+  TipoDecl tipo;
+};
+
+map<string,Var> ts; // Tabela de Símbolos
+
+#define YYSTYPE Atributos
+
+
 
 struct Atributos {
   vector<string> c; // Código
@@ -88,6 +102,33 @@ struct Atributos {
     coluna = 0;
   }
 };
+
+
+
+void insere_tabela_de_simbolos( TipoDecl decl, Atributos id){
+    Var variable;
+    variable.linha = id.linha;
+    variable.coluna = id.coluna;
+    variable.tipo = decl;
+    string name = id.c[0];
+    auto it = ts.find(name);
+    if (it == ts.end()) {
+        ts[name] = variable;
+    } else {
+        cout << "Erro: a variável '" << name << "' já foi declarada na linha " + to_string(ts[name].linha) +"." << '\n';
+        exit(0);
+    }
+}
+
+void checa_declaracao(Atributos id){
+     string name = id.c[0];
+     auto it = ts.find(name);
+     if (it == ts.end()) {
+        cout << "Erro: a variável '" << name << "' não foi declarada." << '\n';
+        exit(0);
+     }
+}
+
 
 #define YYSTYPE Atributos
 
@@ -180,8 +221,7 @@ void cmd_while (Atributos& ss,  Atributos& s_cond, Atributos& s_cmd){
     
     ss.c =  definicao_lbl_condicao_while +
             s_cond.c + lbl_comando_while + "?" + lbl_fim_while + "#" +
-            definicao_lbl_comando_while + s_cmd.c + 
-            + lbl_condicao_while + "#" +
+            definicao_lbl_comando_while + s_cmd.c + lbl_condicao_while + "#" +
             definicao_lbl_fim_while;
 }
 
@@ -202,7 +242,7 @@ void cmd_for(Atributos& ss, Atributos& s_dec, Atributos& s_cond, Atributos& s_cm
 }
 
 
-#line 206 "y.tab.c"
+#line 246 "y.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -661,14 +701,14 @@ static const yytype_int8 yytranslate[] =
 
 #if YYDEBUG
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
-static const yytype_uint8 yyrline[] =
+static const yytype_int16 yyrline[] =
 {
-       0,   153,   153,   156,   157,   160,   161,   162,   163,   164,
-     166,   167,   168,   171,   174,   175,   178,   181,   182,   185,
-     186,   187,   190,   191,   194,   197,   198,   199,   200,   201,
-     202,   203,   206,   207,   208,   209,   210,   211,   212,   213,
-     214,   217,   218,   221,   222,   223,   224,   225,   226,   227,
-     230,   233,   234
+       0,   193,   193,   196,   197,   200,   201,   202,   203,   204,
+     206,   207,   208,   211,   214,   215,   218,   221,   222,   225,
+     226,   227,   230,   231,   234,   237,   238,   239,   240,   241,
+     242,   243,   246,   247,   248,   249,   250,   251,   252,   253,
+     254,   257,   258,   261,   262,   263,   264,   265,   266,   267,
+     270,   273,   274
 };
 #endif
 
@@ -1559,243 +1599,243 @@ yyreduce:
   switch (yyn)
     {
   case 2:
-#line 153 "tp3.y"
+#line 193 "tp3.y"
          { print( resolve_enderecos( yyvsp[0].c + "." ) ); }
-#line 1565 "y.tab.c"
+#line 1605 "y.tab.c"
     break;
 
   case 3:
-#line 156 "tp3.y"
+#line 196 "tp3.y"
                  { yyval.c = yyvsp[-1].c + yyvsp[0].c; }
-#line 1571 "y.tab.c"
+#line 1611 "y.tab.c"
     break;
 
   case 4:
-#line 157 "tp3.y"
+#line 197 "tp3.y"
        {yyval.clear();}
-#line 1577 "y.tab.c"
+#line 1617 "y.tab.c"
     break;
 
   case 9:
-#line 165 "tp3.y"
+#line 205 "tp3.y"
       { yyval.c = yyvsp[-1].c + "println" + "#"; }
-#line 1583 "y.tab.c"
+#line 1623 "y.tab.c"
     break;
 
   case 10:
-#line 166 "tp3.y"
+#line 206 "tp3.y"
               { yyval.c = yyvsp[-1].c + "^"; }
-#line 1589 "y.tab.c"
+#line 1629 "y.tab.c"
     break;
 
   case 11:
-#line 167 "tp3.y"
+#line 207 "tp3.y"
                    {yyval.c = yyvsp[-1].c;}
-#line 1595 "y.tab.c"
+#line 1635 "y.tab.c"
     break;
 
   case 12:
-#line 168 "tp3.y"
+#line 208 "tp3.y"
           {yyval.clear();}
-#line 1601 "y.tab.c"
+#line 1641 "y.tab.c"
     break;
 
   case 13:
-#line 171 "tp3.y"
+#line 211 "tp3.y"
                                               { cmd_for(yyval, yyvsp[-6], yyvsp[-4], yyvsp[0], yyvsp[-2]); }
-#line 1607 "y.tab.c"
+#line 1647 "y.tab.c"
     break;
 
   case 15:
-#line 175 "tp3.y"
+#line 215 "tp3.y"
             { yyval.c = yyvsp[0].c + "^"; }
-#line 1613 "y.tab.c"
+#line 1653 "y.tab.c"
     break;
 
   case 16:
-#line 178 "tp3.y"
+#line 218 "tp3.y"
                    { yyval.c = yyvsp[0].c; }
-#line 1619 "y.tab.c"
+#line 1659 "y.tab.c"
     break;
 
   case 17:
-#line 181 "tp3.y"
+#line 221 "tp3.y"
                     { yyval.c = yyvsp[-2].c + yyvsp[0].c; }
-#line 1625 "y.tab.c"
+#line 1665 "y.tab.c"
     break;
 
   case 19:
-#line 185 "tp3.y"
-                        { yyval.c = yyvsp[0].c + "&"; }
-#line 1631 "y.tab.c"
+#line 225 "tp3.y"
+                        {insere_tabela_de_simbolos( DeclLet, yyvsp[0] );  yyval.c = yyvsp[0].c + "&"; }
+#line 1671 "y.tab.c"
     break;
 
   case 20:
-#line 186 "tp3.y"
-                        { yyval.c = yyvsp[-2].c + "&" + yyvsp[-2].c + yyvsp[0].c + "=" + "^"; }
-#line 1637 "y.tab.c"
+#line 226 "tp3.y"
+                        {insere_tabela_de_simbolos( DeclLet, yyvsp[-2] ); yyval.c = yyvsp[-2].c + "&" + yyvsp[-2].c + yyvsp[0].c + "=" + "^"; }
+#line 1677 "y.tab.c"
     break;
 
   case 21:
-#line 187 "tp3.y"
-                        { yyval.c = yyvsp[-3].c + "&" +  yyvsp[-3].c +  vector<string>{"{}"} + "=" + "^";}
-#line 1643 "y.tab.c"
+#line 227 "tp3.y"
+                        { insere_tabela_de_simbolos( DeclLet, yyvsp[-3] ); yyval.c = yyvsp[-3].c + "&" +  yyvsp[-3].c +  vector<string>{"{}"} + "=" + "^"; }
+#line 1683 "y.tab.c"
     break;
 
   case 22:
-#line 190 "tp3.y"
+#line 230 "tp3.y"
                                     { cmd_if_no_else(yyval, yyvsp[-2], yyvsp[0]); }
-#line 1649 "y.tab.c"
+#line 1689 "y.tab.c"
     break;
 
   case 23:
-#line 191 "tp3.y"
+#line 231 "tp3.y"
                                     { cmd_if_else(yyval, yyvsp[-4], yyvsp[0], yyvsp[-2]); }
-#line 1655 "y.tab.c"
+#line 1695 "y.tab.c"
     break;
 
   case 24:
-#line 194 "tp3.y"
+#line 234 "tp3.y"
                                   {  cmd_while(yyval, yyvsp[-2], yyvsp[0]);  }
-#line 1661 "y.tab.c"
+#line 1701 "y.tab.c"
     break;
 
   case 25:
-#line 197 "tp3.y"
-                              { yyval.c = yyvsp[-2].c + yyvsp[0].c + "="; }
-#line 1667 "y.tab.c"
+#line 237 "tp3.y"
+                              { checa_declaracao(yyvsp[-2]); yyval.c = yyvsp[-2].c + yyvsp[0].c + "="; }
+#line 1707 "y.tab.c"
     break;
 
   case 26:
-#line 198 "tp3.y"
-                              { yyval.c = yyvsp[-3].c + vector<string>{"{}"} + "="; }
-#line 1673 "y.tab.c"
+#line 238 "tp3.y"
+                              { checa_declaracao(yyvsp[-3]); yyval.c = yyvsp[-3].c + vector<string>{"{}"} + "="; }
+#line 1713 "y.tab.c"
     break;
 
   case 27:
-#line 199 "tp3.y"
-                              { yyval.c = yyvsp[-2].c + yyvsp[0].c + "[=]"; }
-#line 1679 "y.tab.c"
+#line 239 "tp3.y"
+                              { checa_declaracao(yyvsp[-2]); yyval.c = yyvsp[-2].c + yyvsp[0].c + "[=]"; }
+#line 1719 "y.tab.c"
     break;
 
   case 28:
-#line 200 "tp3.y"
-                              { yyval.c = yyvsp[-3].c + vector<string>{"{}"} + "[=]"; }
-#line 1685 "y.tab.c"
+#line 240 "tp3.y"
+                              { checa_declaracao(yyvsp[-3]); yyval.c = yyvsp[-3].c + vector<string>{"{}"} + "[=]"; }
+#line 1725 "y.tab.c"
     break;
 
   case 29:
-#line 201 "tp3.y"
-                              { yyval.c = yyvsp[-2].c + yyvsp[-2].c +  "@" + yyvsp[0].c +  "+" + "=";}
-#line 1691 "y.tab.c"
+#line 241 "tp3.y"
+                              { checa_declaracao(yyvsp[-2]); yyval.c = yyvsp[-2].c + yyvsp[-2].c +  "@" + yyvsp[0].c +  "+" + "=";}
+#line 1731 "y.tab.c"
     break;
 
   case 30:
-#line 202 "tp3.y"
-                              { yyval.c = yyvsp[-2].c + yyvsp[-2].c +  "[@]" + yyvsp[0].c +  "+" + "[=]";}
-#line 1697 "y.tab.c"
+#line 242 "tp3.y"
+                              { checa_declaracao(yyvsp[-2]); yyval.c = yyvsp[-2].c + yyvsp[-2].c +  "[@]" + yyvsp[0].c +  "+" + "[=]";}
+#line 1737 "y.tab.c"
     break;
 
   case 31:
-#line 203 "tp3.y"
+#line 243 "tp3.y"
                               { 
                                  yyval.c = yyvsp[-1].c + "@" +  yyvsp[-1].c + yyvsp[-1].c + "@" + vector<string>{"1"} + vector<string>{"+"} + vector<string>{"="} + "^"; 
                               }
-#line 1705 "y.tab.c"
+#line 1745 "y.tab.c"
     break;
 
   case 32:
-#line 206 "tp3.y"
+#line 246 "tp3.y"
                               { yyval.c = yyvsp[-2].c + yyvsp[0].c + yyvsp[-1].c; }
-#line 1711 "y.tab.c"
+#line 1751 "y.tab.c"
     break;
 
   case 33:
-#line 207 "tp3.y"
+#line 247 "tp3.y"
                               { yyval.c = yyvsp[-2].c + yyvsp[0].c + yyvsp[-1].c; }
-#line 1717 "y.tab.c"
+#line 1757 "y.tab.c"
     break;
 
   case 34:
-#line 208 "tp3.y"
+#line 248 "tp3.y"
                               { yyval.c = yyvsp[-2].c + yyvsp[0].c + yyvsp[-1].c; }
-#line 1723 "y.tab.c"
+#line 1763 "y.tab.c"
     break;
 
   case 35:
-#line 209 "tp3.y"
+#line 249 "tp3.y"
                               { yyval.c = yyvsp[-2].c + yyvsp[0].c + yyvsp[-1].c; }
-#line 1729 "y.tab.c"
+#line 1769 "y.tab.c"
     break;
 
   case 36:
-#line 210 "tp3.y"
+#line 250 "tp3.y"
                               { yyval.c = yyvsp[-2].c + yyvsp[0].c + yyvsp[-1].c; }
-#line 1735 "y.tab.c"
+#line 1775 "y.tab.c"
     break;
 
   case 37:
-#line 211 "tp3.y"
+#line 251 "tp3.y"
                               { yyval.c = yyvsp[-2].c + yyvsp[0].c + yyvsp[-1].c; }
-#line 1741 "y.tab.c"
+#line 1781 "y.tab.c"
     break;
 
   case 38:
-#line 212 "tp3.y"
+#line 252 "tp3.y"
                               { yyval.c = yyvsp[-2].c + yyvsp[0].c + yyvsp[-1].c; }
-#line 1747 "y.tab.c"
+#line 1787 "y.tab.c"
     break;
 
   case 39:
-#line 213 "tp3.y"
+#line 253 "tp3.y"
                               { yyval.c = yyvsp[-2].c + yyvsp[0].c + yyvsp[-1].c; }
-#line 1753 "y.tab.c"
+#line 1793 "y.tab.c"
     break;
 
   case 41:
-#line 217 "tp3.y"
+#line 257 "tp3.y"
           {yyval.c = "0" + yyvsp[0].c + yyvsp[-1].c;}
-#line 1759 "y.tab.c"
+#line 1799 "y.tab.c"
     break;
 
   case 44:
-#line 222 "tp3.y"
+#line 262 "tp3.y"
                         {yyval.c = vector<string>{"[]"};}
-#line 1765 "y.tab.c"
+#line 1805 "y.tab.c"
     break;
 
   case 47:
-#line 225 "tp3.y"
+#line 265 "tp3.y"
                         { yyval.c = yyvsp[0].c + "@"; }
-#line 1771 "y.tab.c"
+#line 1811 "y.tab.c"
     break;
 
   case 48:
-#line 226 "tp3.y"
+#line 266 "tp3.y"
                         {yyval.c = yyvsp[0].c + "[@]";}
-#line 1777 "y.tab.c"
+#line 1817 "y.tab.c"
     break;
 
   case 49:
-#line 227 "tp3.y"
+#line 267 "tp3.y"
                         { yyval.c = yyvsp[-1].c; }
-#line 1783 "y.tab.c"
+#line 1823 "y.tab.c"
     break;
 
   case 51:
-#line 233 "tp3.y"
+#line 273 "tp3.y"
                          { yyval.c = yyvsp[-3].c + yyvsp[-1].c;}
-#line 1789 "y.tab.c"
+#line 1829 "y.tab.c"
     break;
 
   case 52:
-#line 234 "tp3.y"
+#line 274 "tp3.y"
                          { yyval.c = yyvsp[-2].c + yyvsp[0].c;}
-#line 1795 "y.tab.c"
+#line 1835 "y.tab.c"
     break;
 
 
-#line 1799 "y.tab.c"
+#line 1839 "y.tab.c"
 
       default: break;
     }
@@ -2027,7 +2067,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 239 "tp3.y"
+#line 279 "tp3.y"
 
 
 #include "lex.yy.c"

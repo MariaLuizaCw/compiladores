@@ -3,10 +3,24 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <exception>
 
 using namespace std;
 
 int linha = 1, coluna = 1; 
+
+enum TipoDecl { DeclVar, DeclConst, DeclLet };
+
+struct Var {
+  int linha, coluna;
+  TipoDecl tipo;
+};
+
+map<string,Var> ts; // Tabela de Símbolos
+
+#define YYSTYPE Atributos
+
+
 
 struct Atributos {
   vector<string> c; // Código
@@ -19,6 +33,33 @@ struct Atributos {
     coluna = 0;
   }
 };
+
+
+
+void insere_tabela_de_simbolos( TipoDecl decl, Atributos id){
+    Var variable;
+    variable.linha = id.linha;
+    variable.coluna = id.coluna;
+    variable.tipo = decl;
+    string name = id.c[0];
+    auto it = ts.find(name);
+    if (it == ts.end()) {
+        ts[name] = variable;
+    } else {
+        cout << "Erro: a variável '" << name << "' ja foi declarada na linha " + to_string(ts[name].linha) +"." << '\n';
+        exit(1);
+    }
+}
+
+void checa_declaracao(Atributos id){
+     string name = id.c[0];
+     auto it = ts.find(name);
+     if (it == ts.end()) {
+        cout << "Erro: a variável '" << name << "' não foi declarada." << '\n';
+        exit(1);
+     }
+}
+
 
 #define YYSTYPE Atributos
 
@@ -111,8 +152,7 @@ void cmd_while (Atributos& ss,  Atributos& s_cond, Atributos& s_cmd){
     
     ss.c =  definicao_lbl_condicao_while +
             s_cond.c + lbl_comando_while + "?" + lbl_fim_while + "#" +
-            definicao_lbl_comando_while + s_cmd.c + 
-            + lbl_condicao_while + "#" +
+            definicao_lbl_comando_while + s_cmd.c + lbl_condicao_while + "#" +
             definicao_lbl_fim_while;
 }
 
@@ -182,9 +222,9 @@ VARs : VAR ',' VARs { $$.c = $1.c + $3.c; }
      | VAR
      ;
 
-VAR : ID                { $$.c = $1.c + "&"; }
-    | ID '=' E          { $$.c = $1.c + "&" + $1.c + $3.c + "=" + "^"; }
-    | ID '=' '{' '}'    { $$.c = $1.c + "&" +  $1.c +  vector<string>{"{}"} + "=" + "^";} 
+VAR : ID                {insere_tabela_de_simbolos( DeclLet, $1 );  $$.c = $1.c + "&"; }
+    | ID '=' E          {insere_tabela_de_simbolos( DeclLet, $1 ); $$.c = $1.c + "&" + $1.c + $3.c + "=" + "^"; }
+    | ID '=' '{' '}'    { insere_tabela_de_simbolos( DeclLet, $1 ); $$.c = $1.c + "&" +  $1.c +  vector<string>{"{}"} + "=" + "^"; } 
     ;
      
 CMD_IF : IF '(' E ')' CMD           { cmd_if_no_else($$, $3, $5); }
@@ -194,12 +234,12 @@ CMD_IF : IF '(' E ')' CMD           { cmd_if_no_else($$, $3, $5); }
 CMD_WHILE : WHILE '(' E ')' CMD   {  cmd_while($$, $3, $5);  }
           ;
 
-E : LVALUE '=' E              { $$.c = $1.c + $3.c + "="; }
-  | LVALUE '=' '{' '}'        { $$.c = $1.c + vector<string>{"{}"} + "="; } 
-  | LVALUEPROP '=' E          { $$.c = $1.c + $3.c + "[=]"; }
-  | LVALUEPROP '=' '{' '}'    { $$.c = $1.c + vector<string>{"{}"} + "[=]"; }
-  | LVALUE MAIS_IGUAL E       { $$.c = $1.c + $1.c +  "@" + $3.c +  "+" + "=";}
-  | LVALUEPROP MAIS_IGUAL E   { $$.c = $1.c + $1.c +  "[@]" + $3.c +  "+" + "[=]";}
+E : LVALUE '=' E              { checa_declaracao($1); $$.c = $1.c + $3.c + "="; }
+  | LVALUE '=' '{' '}'        { checa_declaracao($1); $$.c = $1.c + vector<string>{"{}"} + "="; } 
+  | LVALUEPROP '=' E          { checa_declaracao($1); $$.c = $1.c + $3.c + "[=]"; }
+  | LVALUEPROP '=' '{' '}'    { checa_declaracao($1); $$.c = $1.c + vector<string>{"{}"} + "[=]"; }
+  | LVALUE MAIS_IGUAL E       { checa_declaracao($1); $$.c = $1.c + $1.c +  "@" + $3.c +  "+" + "=";}
+  | LVALUEPROP MAIS_IGUAL E   { checa_declaracao($1); $$.c = $1.c + $1.c +  "[@]" + $3.c +  "+" + "[=]";}
   | LVALUE MAIS_MAIS          { 
                                  $$.c = $1.c + "@" +  $1.c + $1.c + "@" + vector<string>{"1"} + vector<string>{"+"} + vector<string>{"="} + "^"; 
                               }
