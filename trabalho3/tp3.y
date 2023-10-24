@@ -100,6 +100,21 @@ void cmd_if_no_else(Atributos& ss, Atributos& s_cond, Atributos& s_true){
 }
 
 
+void cmd_while (Atributos& ss,  Atributos& s_cond, Atributos& s_cmd){
+
+    string lbl_fim_while = gera_label( "fim_while" );
+    string lbl_condicao_while = gera_label( "condicao_while" );
+    string lbl_comando_while = gera_label( "comando_while" );
+    string definicao_lbl_fim_while = ":" + lbl_fim_while;
+    string definicao_lbl_condicao_while = ":" + lbl_condicao_while;
+    string definicao_lbl_comando_while = ":" + lbl_comando_while;
+    
+    ss.c =  definicao_lbl_condicao_while +
+            s_cond.c + lbl_comando_while + "?" + lbl_fim_while + "#" +
+            definicao_lbl_comando_while + s_cmd.c + 
+            + lbl_condicao_while + "#" +
+            definicao_lbl_fim_while;
+}
 
 void cmd_for(Atributos& ss, Atributos& s_dec, Atributos& s_cond, Atributos& s_cmd, Atributos& s_it){
 
@@ -119,12 +134,13 @@ void cmd_for(Atributos& ss, Atributos& s_dec, Atributos& s_cond, Atributos& s_cm
 
 %}
 
-%token ID IF ELSE LET PRINT FOR
+%token ID IF ELSE LET PRINT FOR WHILE
 %token CDOUBLE CSTRING CINT
 %token AND OR ME_IG MA_IG DIF IGUAL
 %token MAIS_IGUAL MAIS_MAIS
 
 %right '='
+%nonassoc IGUAL MAIS_IGUAL  MAIS_MAIS
 %nonassoc '<' '>'
 %left '+' '-'
 %left '*' '/' '%'
@@ -143,11 +159,13 @@ CMDs : CMDs CMD  { $$.c = $1.c + $2.c; };
      
 CMD : CMD_LET ';'
     | CMD_IF
+    | CMD_WHILE
+    | CMD_FOR
     | PRINT E ';' 
       { $$.c = $2.c + "println" + "#"; }
-    | CMD_FOR
     | E ';'   { $$.c = $1.c + "^"; }
     | '{' CMDs '}' {$$.c = $2.c;}
+    | ';' {$$.clear();}
     ;
  
 CMD_FOR : FOR '(' PRIM_E ';' E ';' E ')' CMD  { cmd_for($$, $3, $5, $9, $7); }
@@ -172,32 +190,35 @@ VAR : ID                { $$.c = $1.c + "&"; }
 CMD_IF : IF '(' E ')' CMD           { cmd_if_no_else($$, $3, $5); }
        | IF '(' E ')' CMD ELSE CMD  { cmd_if_else($$, $3, $7, $5); }
        ;
-        
-LVALUE : ID 
-       ;
-       
-LVALUEPROP : E '[' E ']' { $$.c = $1.c + $3.c;}
-           | E '.' ID    { $$.c = $1.c + $3.c;}
-           ;
+      
+CMD_WHILE : WHILE '(' E ')' CMD   {  cmd_while($$, $3, $5);  }
+          ;
 
+E : LVALUE '=' E              { $$.c = $1.c + $3.c + "="; }
+  | LVALUE '=' '{' '}'        { $$.c = $1.c + vector<string>{"{}"} + "="; } 
+  | LVALUEPROP '=' E          { $$.c = $1.c + $3.c + "[=]"; }
+  | LVALUEPROP '=' '{' '}'    { $$.c = $1.c + vector<string>{"{}"} + "[=]"; }
+  | LVALUE MAIS_IGUAL E       { $$.c = $1.c + $1.c +  "@" + $3.c +  "+" + "=";}
+  | LVALUEPROP MAIS_IGUAL E   { $$.c = $1.c + $1.c +  "[@]" + $3.c +  "+" + "[=]";}
+  | LVALUE MAIS_MAIS          { 
+                                 $$.c = $1.c + "@" +  $1.c + $1.c + "@" + vector<string>{"1"} + vector<string>{"+"} + vector<string>{"="} + "^"; 
+                              }
+  | E '<' E                   { $$.c = $1.c + $3.c + $2.c; }
+  | E '>' E                   { $$.c = $1.c + $3.c + $2.c; }
+  | E '+' E                   { $$.c = $1.c + $3.c + $2.c; }
+  | E '-' E                   { $$.c = $1.c + $3.c + $2.c; }
+  | E '*' E                   { $$.c = $1.c + $3.c + $2.c; }
+  | E '/' E                   { $$.c = $1.c + $3.c + $2.c; }
+  | E '%' E                   { $$.c = $1.c + $3.c + $2.c; }
+  | E IGUAL E                 { $$.c = $1.c + $3.c + $2.c; }
+  | U
+  ;
 
+U : '-' F {$$.c = "0" + $2.c + $1.c;}
+  | F
+  ;
 
-
-E : LVALUE '=' E        { $$.c = $1.c + $3.c + "="; }
-  | LVALUE '=' '{' '}'  { $$.c = $1.c + vector<string>{"{}"} + "="; } 
-  | LVALUEPROP '=' E    { $$.c = $1.c + $3.c + "[=]"; }
-  | LVALUE MAIS_IGUAL E { $$.c = $1.c + $1.c +  "@" + $3.c +  "+" + "=";}
-  | E '<' E             { $$.c = $1.c + $3.c + $2.c; }
-  | E '>' E             { $$.c = $1.c + $3.c + $2.c; }
-  | E '+' E             { $$.c = $1.c + $3.c + $2.c; }
-  | E '-' E             { $$.c = $1.c + $3.c + $2.c; }
-  | E '*' E             { $$.c = $1.c + $3.c + $2.c; }
-  | E '/' E             { $$.c = $1.c + $3.c + $2.c; }
-  | E '%' E             { $$.c = $1.c + $3.c + $2.c; }
-  | E IGUAL E           { $$.c = $1.c + $3.c + $2.c; }
-  | '-' E               { $$.c = "0" + $2.c + "-"; }
-  | LVALUE MAIS_MAIS    { $$.c = $1.c +  ((($1.c + "@") + "1") + "+" )+ "="; }
-  | CDOUBLE
+F :  CDOUBLE
   | '[' ']'             {$$.c = vector<string>{"[]"};}
   | CINT
   | CSTRING
@@ -205,8 +226,16 @@ E : LVALUE '=' E        { $$.c = $1.c + $3.c + "="; }
   | LVALUEPROP          {$$.c = $1.c + "[@]";}
   | '(' E ')'           { $$.c = $2.c; }
   ;
-  
-  
+
+LVALUE : ID 
+       ;
+       
+LVALUEPROP : F '[' E ']' { $$.c = $1.c + $3.c;}
+           | F '.' ID    { $$.c = $1.c + $3.c;}
+           ;
+
+
+
 %%
 
 #include "lex.yy.c"
