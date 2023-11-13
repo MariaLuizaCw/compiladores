@@ -9,15 +9,15 @@ using namespace std;
 
 int linha = 1, coluna = 1; 
 
-enum TipoDecl { DeclVar, DeclConst, DeclLet };
+enum TipoDecl { DeclVar = 1, DeclConst, DeclLet };
 
 struct Var {
   int linha, coluna;
   TipoDecl tipo;
 };
 
-map<string,Var> ts; // Tabela de Símbolos
-
+vector< map< string, Var > > ts = { map< string, Var >{} }; 
+vector<string> funcoes;
 #define YYSTYPE Atributos
 
 
@@ -27,37 +27,63 @@ struct Atributos {
 
   int linha = 0, coluna = 0;
 
+  int contador = 0;     
+  
+  // Só para valor default de argumento        
+  vector<string> valor_default; 
+
   void clear() {
     c.clear();
+    valor_default.clear();
     linha = 0;
     coluna = 0;
+    contador = 0;
   }
 };
 
 
 
-void insere_tabela_de_simbolos( TipoDecl decl, Atributos id){
+vector<string>  insere_tabela_de_simbolos( TipoDecl decl, Atributos id){
     Var variable;
     variable.linha = id.linha;
     variable.coluna = id.coluna;
     variable.tipo = decl;
     string name = id.c[0];
-    auto it = ts.find(name);
-    if (it == ts.end()) {
-        ts[name] = variable;
+
+    auto& top_ts = ts.back();   
+    auto it = top_ts.find(name);
+    // cout << DeclVar << '\n';
+    // cout << decl << '\n';
+    // cout << (decl == DeclVar)<< '\n';
+    if (it == top_ts.end()) {
+      top_ts[name] = variable;
+      return  vector<string>{ name, "&" };
+    } else if (decl == DeclVar && top_ts[name].tipo == DeclVar) {
+      top_ts[name] = variable;
+      return  vector<string>{};
     } else {
-        cout << "Erro: a variável '" << name << "' ja foi declarada na linha " + to_string(ts[name].linha) +"." << '\n';
+        cout << "Erro: a variável '" << name << "' já foi declarada na linha " + to_string(top_ts[name].linha) +"." << '\n';
         exit(1);
     }
 }
+  
+void checa_declaracao(Atributos id, bool modificavel){
+  string name = id.c[0];
+  for( int i = ts.size() - 1; i >= 0; i-- ) {  
+    auto& top_ts = ts[i];
+    if( top_ts.count( name ) > 0 ) {
+      if( modificavel && top_ts[name].tipo == DeclConst ) {
+        cerr << "Variavel '" << name << "' não pode ser modificada." << endl;
+        exit( 1 );     
+      }
+      else 
+        return;
+    }
+  }
 
-void checa_declaracao(Atributos id){
-     string name = id.c[0];
-     auto it = ts.find(name);
-     if (it == ts.end()) {
-        cout << "Erro: a variável '" << name << "' não foi declarada." << '\n';
-        exit(1);
-     }
+  cerr << "Variavel '" << name << "' não declarada." << endl;
+  exit( 1 ); 
+   
 }
 
 
@@ -174,7 +200,7 @@ void cmd_for(Atributos& ss, Atributos& s_dec, Atributos& s_cond, Atributos& s_cm
 
 %}
 
-%token ID IF ELSE LET PRINT FOR WHILE
+%token ID IF ELSE LET CONST VAR  PRINT FOR WHILE FUNCTION
 %token CDOUBLE CSTRING CINT
 %token AND OR ME_IG MA_IG DIF IGUAL
 %token MAIS_IGUAL MAIS_MAIS
@@ -184,13 +210,13 @@ void cmd_for(Atributos& ss, Atributos& s_dec, Atributos& s_cond, Atributos& s_cm
 %nonassoc '<' '>'
 %left '+' '-'
 %left '*' '/' '%'
-%left '['
+%right '[' '('
 %left '.'
 
 
 %%
 
-S : CMDs { print( resolve_enderecos( $1.c + "." ) ); }
+S : CMDs { print( resolve_enderecos( $1.c + "."  + funcoes) ); }
   ;
 
 CMDs : CMDs CMD  { $$.c = $1.c + $2.c; };
@@ -198,35 +224,125 @@ CMDs : CMDs CMD  { $$.c = $1.c + $2.c; };
      ;
      
 CMD : CMD_LET ';'
+    | CMD_VAR ';'
+    | CMD_CONST ';'
     | CMD_IF
     | CMD_WHILE
     | CMD_FOR
+    | CMD_FUNC
     | PRINT E ';' 
       { $$.c = $2.c + "println" + "#"; }
     | E ';'   { $$.c = $1.c + "^"; }
-    | '{' CMDs '}' {$$.c = $2.c;}
+    | '{' EMPILHA_TS CMDs '}' {ts.pop_back(); $$.c = "<{" + $3.c + "}>";}
     | ';' {$$.clear();}
     ;
  
+    
+EMPILHA_TS : { ts.push_back( map< string, Var >{} ); } 
+           ;
+
+CMD_FUNC : FUNCTION ID { insere_tabela_de_simbolos(DeclVar, $2); } 
+             '(' EMPILHA_TS LISTA_PARAMs ')' '{' CMDs '}'
+           { 
+             string lbl_endereco_funcao = gera_label( "func_" + $2.c[0] );
+             string definicao_lbl_endereco_funcao = ":" + lbl_endereco_funcao;
+             
+             $$.c = $2.c + "&" + $2.c + "{}"  + "=" + "'&funcao'" +
+                    lbl_endereco_funcao + "[=]" + "^";
+             funcoes = funcoes + definicao_lbl_endereco_funcao + $6.c + $9.c +
+                       "undefined" + "@" + "'&retorno'" + "@"+ "~";
+             ts.pop_back(); 
+           }
+         ;
+
+LISTA_PARAMs : PARAMs
+           | { $$.clear(); }
+           ;
+           
+PARAMs : PARAMs ',' PARAM  
+       { // a & a arguments @ 0 [@] = ^ 
+         $$.c = $1.c + $3.c + "&" + $3.c + "arguments" + "@" + to_string( $1.contador )
+                + "[@]" + "=" + "^"; 
+                
+        //  if( $3.valor_default.size() > 0 ) {
+        //    // Gerar código para testar valor default.
+        //  }
+         $$.contador = $1.contador + $3.contador; 
+       }
+     | PARAM 
+       { // a & a arguments @ 0 [@] = ^ 
+         $$.c = $1.c + "&" + $1.c + "arguments" + "@" + "0" + "[@]" + "=" + "^"; 
+                
+        //  if( $1.valor_default.size() > 0 ) {
+        //    // Gerar código para testar valor default.
+        //  }
+         $$.contador = $1.contador; 
+       }
+     ;
+     
+PARAM : ID 
+      { $$.c = $1.c;      
+        $$.contador = 1;
+        $$.valor_default.clear();
+        insere_tabela_de_simbolos(DeclLet, $1);
+      }
+    | ID '=' E
+      { // Código do IF
+        $$.c = $1.c;
+        $$.contador = 1;
+        $$.valor_default = $3.c;         
+        insere_tabela_de_simbolos(DeclLet, $1);
+      }
+    ;
+
+
+
 CMD_FOR : FOR '(' PRIM_E ';' E ';' E ')' CMD  { cmd_for($$, $3, $5, $9, $7); }
         ;
 
 PRIM_E : CMD_LET 
+       | CMD_VAR
+       | CMD_CONST
        | E  { $$.c = $1.c + "^"; }
        ;
 
-CMD_LET : LET VARs { $$.c = $2.c; }
+CMD_LET : LET LET_VARs { $$.c = $2.c; }
         ;
 
-VARs : VAR ',' VARs { $$.c = $1.c + $3.c; } 
-     | VAR
-     ;
+LET_VARs : LET_VAR ',' LET_VARs { $$.c = $1.c + $3.c; } 
+          | LET_VAR
+          ;
 
-VAR : ID                {insere_tabela_de_simbolos( DeclLet, $1 );  $$.c = $1.c + "&"; }
-    | ID '=' E          {insere_tabela_de_simbolos( DeclLet, $1 ); $$.c = $1.c + "&" + $1.c + $3.c + "=" + "^"; }
-    | ID '=' '{' '}'    { insere_tabela_de_simbolos( DeclLet, $1 ); $$.c = $1.c + "&" +  $1.c +  vector<string>{"{}"} + "=" + "^"; } 
-    ;
-     
+LET_VAR : ID                    {$$.c = insere_tabela_de_simbolos( DeclLet, $1 ); }
+        | ID '=' E              {$$.c = insere_tabela_de_simbolos( DeclLet, $1 ) + $1.c + $3.c + "=" + "^"; }
+        | ID '=' '{' '}'        {$$.c = insere_tabela_de_simbolos( DeclLet, $1 ) +  $1.c +  vector<string>{"{}"} + "=" + "^"; } 
+        ;
+    
+CMD_VAR : VAR VAR_VARs { $$.c = $2.c; }
+        ;
+        
+VAR_VARs : VAR_VAR ',' VAR_VARs { $$.c = $1.c + $3.c; } 
+         | VAR_VAR
+         ;
+
+VAR_VAR : ID                    {$$.c = insere_tabela_de_simbolos( DeclVar, $1 ); }
+        | ID '=' E              {$$.c = insere_tabela_de_simbolos( DeclVar, $1 ) + $1.c + $3.c + "=" + "^"; }
+        | ID '=' '{' '}'        {$$.c = insere_tabela_de_simbolos( DeclVar, $1 ) + $1.c +  "{}" + "=" + "^"; } 
+        ;
+
+CMD_CONST: CONST CONST_VARs { $$.c = $2.c; }
+         ;
+  
+CONST_VARs : CONST_VAR ',' CONST_VARs { $$.c = $1.c + $3.c; } 
+           | CONST_VAR
+           ;
+
+CONST_VAR : ID '=' E
+            { $$.c = insere_tabela_de_simbolos( DeclConst,  $1 ) + 
+                     $1.c + $3.c + "=" + "^"; }
+          ;
+
+
 CMD_IF : IF '(' E ')' CMD           { cmd_if_no_else($$, $3, $5); }
        | IF '(' E ')' CMD ELSE CMD  { cmd_if_else($$, $3, $7, $5); }
        ;
@@ -234,12 +350,12 @@ CMD_IF : IF '(' E ')' CMD           { cmd_if_no_else($$, $3, $5); }
 CMD_WHILE : WHILE '(' E ')' CMD   {  cmd_while($$, $3, $5);  }
           ;
 
-E : LVALUE '=' E              { checa_declaracao($1); $$.c = $1.c + $3.c + "="; }
-  | LVALUE '=' '{' '}'        { checa_declaracao($1); $$.c = $1.c + vector<string>{"{}"} + "="; } 
-  | LVALUEPROP '=' E          { checa_declaracao($1); $$.c = $1.c + $3.c + "[=]"; }
-  | LVALUEPROP '=' '{' '}'    { checa_declaracao($1); $$.c = $1.c + vector<string>{"{}"} + "[=]"; }
-  | LVALUE MAIS_IGUAL E       { checa_declaracao($1); $$.c = $1.c + $1.c +  "@" + $3.c +  "+" + "=";}
-  | LVALUEPROP MAIS_IGUAL E   { checa_declaracao($1); $$.c = $1.c + $1.c +  "[@]" + $3.c +  "+" + "[=]";}
+E : LVALUE '=' E              { checa_declaracao($1, true); $$.c = $1.c + $3.c + "="; }
+  | LVALUE '=' '{' '}'        { checa_declaracao($1, true); $$.c = $1.c + vector<string>{"{}"} + "="; } 
+  | LVALUEPROP '=' E          { checa_declaracao($1, true); $$.c = $1.c + $3.c + "[=]"; }
+  | LVALUEPROP '=' '{' '}'    { checa_declaracao($1, true); $$.c = $1.c + vector<string>{"{}"} + "[=]"; }
+  | LVALUE MAIS_IGUAL E       { checa_declaracao($1, true); $$.c = $1.c + $1.c +  "@" + $3.c +  "+" + "=";}
+  | LVALUEPROP MAIS_IGUAL E   { checa_declaracao($1, true); $$.c = $1.c + $1.c +  "[@]" + $3.c +  "+" + "[=]";}
   | LVALUE MAIS_MAIS          { 
                                  $$.c = $1.c + "@" +  $1.c + $1.c + "@" + vector<string>{"1"} + vector<string>{"+"} + vector<string>{"="} + "^"; 
                               }
@@ -251,8 +367,26 @@ E : LVALUE '=' E              { checa_declaracao($1); $$.c = $1.c + $3.c + "="; 
   | E '/' E                   { $$.c = $1.c + $3.c + $2.c; }
   | E '%' E                   { $$.c = $1.c + $3.c + $2.c; }
   | E IGUAL E                 { $$.c = $1.c + $3.c + $2.c; }
+  | E '(' LISTA_ARGs ')'
+    {
+      $$.c = $3.c + to_string( $3.contador ) + $1.c + "$";
+    }
   | U
   ;
+
+
+LISTA_ARGs : ARGs
+           | { $$.clear(); }
+           ;
+             
+ARGs : ARGs ',' E
+       { $$.c = $1.c + $3.c;
+         $$.contador = $1.contador + $3.contador; }
+     | E
+       { $$.c = $1.c;
+         $$.contador = 1; }
+     ;
+           
 
 U : '-' F {$$.c = "0" + $2.c + $1.c;}
   | F
@@ -262,7 +396,7 @@ F :  CDOUBLE
   | '[' ']'             {$$.c = vector<string>{"[]"};}
   | CINT
   | CSTRING
-  | LVALUE              { $$.c = $1.c + "@"; } 
+  | LVALUE              { checa_declaracao($1, false ); $$.c = $1.c + "@"; } 
   | LVALUEPROP          {$$.c = $1.c + "[@]";}
   | '(' E ')'           { $$.c = $2.c; }
   ;

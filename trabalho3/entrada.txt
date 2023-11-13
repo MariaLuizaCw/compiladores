@@ -1,2 +1,6 @@
-let a;
-let a;
+function log (a){
+  print a;
+}
+
+
+log(1);
