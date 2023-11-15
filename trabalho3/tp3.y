@@ -103,7 +103,7 @@ void checa_declaracao(Atributos id, bool modificavel){
     }
   }
 
-  if (!in_function){
+  if (!in_function & name != "undefined"){
     cerr << "Variavel '" << name << "' não declarada." << endl;
     exit( 1 ); 
   }
@@ -224,8 +224,8 @@ void cmd_for(Atributos& ss, Atributos& s_dec, Atributos& s_cond, Atributos& s_cm
 
 %}
 
-%token ID IF ELSE LET CONST VAR  PRINT FOR WHILE FUNCTION ASM BOOLEAN RETURN
-%token CDOUBLE CSTRING CINT
+%token ID IF ELSE LET CONST VAR  PRINT FOR WHILE FUNCTION ASM  RETURN
+%token CDOUBLE CSTRING CINT UNDEFINED BOOLEAN
 %token AND OR ME_IG MA_IG DIF IGUAL
 %token MAIS_IGUAL MAIS_MAIS
 
@@ -265,15 +265,15 @@ CMD : CMD_LET ';'
 EMPILHA_TS : { ts.push_back( map< string, Var >{} ); } 
            ;
 
-CMD_FUNC : FUNCTION ID { insere_tabela_de_simbolos(DeclVar, $2); } 
-             '(' EMPILHA_TS LISTA_PARAMs ')' '{' {in_function++;} CMDs '}'
+CMD_FUNC : FUNCTION ID { insere_tabela_de_simbolos(DeclVar, $2);  in_function++;} 
+             '('  EMPILHA_TS LISTA_PARAMs ')' '{'  CMDs '}'
            { 
              string lbl_endereco_funcao = gera_label( "func_" + $2.c[0] );
              string definicao_lbl_endereco_funcao = ":" + lbl_endereco_funcao;
              
              $$.c = $2.c + "&" + $2.c + "{}"  + "=" + "'&funcao'" +
                     lbl_endereco_funcao + "[=]" + "^";
-             funcoes = funcoes + definicao_lbl_endereco_funcao + $6.c + $10.c +
+             funcoes = funcoes + definicao_lbl_endereco_funcao + $6.c + $9.c +
                        "undefined" + "@" + "'&retorno'" + "@"+ "~";
              ts.pop_back(); 
              in_function--;
@@ -283,24 +283,56 @@ CMD_FUNC : FUNCTION ID { insere_tabela_de_simbolos(DeclVar, $2); }
 LISTA_PARAMs : PARAMs
            | { $$.clear(); }
            ;
-           
+
+// void cmd_if_else(Atributos& ss, Atributos& s_cond, Atributos& s_false, Atributos& s_true){
+//     string lbl_true = gera_label( "lbl_true" );
+//     string lbl_fim_if = gera_label( "lbl_fim_if" );
+//     string definicao_lbl_true = ":" + lbl_true;
+//     string definicao_lbl_fim_if = ":" + lbl_fim_if;
+//     ss.c = s_cond.c +                          // Codigo da expressão
+//     lbl_true + "?" +                   // Código do IF
+//     s_false.c + lbl_fim_if + "#" +    // Código do False
+//     definicao_lbl_true + s_true.c +  // Código do True
+//     definicao_lbl_fim_if;           // Fim do IF
+    
+// }
+
 PARAMs : PARAMs ',' PARAM  
        { // a & a arguments @ 0 [@] = ^ 
          $$.c = $1.c + $3.c + "&" + $3.c + "arguments" + "@" + to_string( $1.contador )
                 + "[@]" + "=" + "^"; 
                 
-        //  if( $3.valor_default.size() > 0 ) {
-        //    // Gerar código para testar valor default.
-        //  }
+         if( $3.valor_default.size() > 0 ) {
+           string lbl_true = gera_label( "lbl_true" );
+           string lbl_fim_if = gera_label( "lbl_fim_if" );
+           string definicao_lbl_true = ":" + lbl_true;
+           string definicao_lbl_fim_if = ":" + lbl_fim_if;
+          
+           $$.c = $$.c + $3.c + "@" +  "undefined" + "@" + "!=" +
+                 lbl_true + "?" + $3.c + $3.valor_default + "=" + "^" +
+                 lbl_fim_if + "#" +
+                 definicao_lbl_true + 
+                 definicao_lbl_fim_if;
+
+
+         }
          $$.contador = $1.contador + $3.contador; 
        }
      | PARAM 
        { // a & a arguments @ 0 [@] = ^ 
          $$.c = $1.c + "&" + $1.c + "arguments" + "@" + "0" + "[@]" + "=" + "^"; 
                 
-        //  if( $1.valor_default.size() > 0 ) {
-        //    // Gerar código para testar valor default.
-        //  }
+         if( $1.valor_default.size() > 0 ) {
+           string lbl_true = gera_label( "lbl_true" );
+           string lbl_fim_if = gera_label( "lbl_fim_if" );
+           string definicao_lbl_true = ":" + lbl_true;
+           string definicao_lbl_fim_if = ":" + lbl_fim_if;
+           $$.c = $$.c + $1.c + "@" +  "undefined" + "@" + "!=" +
+                 lbl_true + "?" + $1.c + $1.valor_default + "=" + "^" +
+                 lbl_fim_if + "#" +
+                 definicao_lbl_true + 
+                 definicao_lbl_fim_if;
+         }
          $$.contador = $1.contador; 
        }
      ;

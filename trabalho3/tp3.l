@@ -49,7 +49,6 @@ BOOL    "true"|"false"
 "while"      { return token( WHILE ); }
 "return"      { return token( RETURN ); }
 
-
 {BOOL}     {return token(BOOLEAN);}
 {ID}       { return token( ID ); }
 

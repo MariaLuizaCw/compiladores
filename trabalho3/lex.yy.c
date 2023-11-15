@@ -918,22 +918,22 @@ YY_RULE_SETUP
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 53 "tp3.l"
+#line 52 "tp3.l"
 {return token(BOOLEAN);}
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 54 "tp3.l"
+#line 53 "tp3.l"
 { return token( ID ); }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 56 "tp3.l"
+#line 55 "tp3.l"
 { return token( *yytext ); }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 58 "tp3.l"
+#line 57 "tp3.l"
 ECHO;
 	YY_BREAK
 #line 940 "lex.yy.c"
@@ -1941,7 +1941,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 58 "tp3.l"
+#line 57 "tp3.l"
 
 
 int token( int tk ) {  
