@@ -1,6 +1,9 @@
-let teste = 0;
-
-{
-
-    x = 2;
+function f( x ) {
+  let b = f;
+  const h = [ ];
+  f = x;
+  return b ;
 }
+
+let a;
+let g = f( a = [ ], {} );

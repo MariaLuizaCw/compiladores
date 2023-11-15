@@ -407,6 +407,9 @@ LISTA_ARGs : ARGs
 ARGs : ARGs ',' E
        { $$.c = $1.c + $3.c;
           $$.contador++; }
+     | ARGs ',' '{' '}'
+     { $$.c = $1.c + vector<string>{"{}"};
+          $$.contador++; }
      | E
        { $$.c = $1.c;
          $$.contador = 1; }
