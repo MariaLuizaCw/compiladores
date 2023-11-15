@@ -18,6 +18,7 @@ struct Var {
 
 vector< map< string, Var > > ts = { map< string, Var >{} }; 
 vector<string> funcoes;
+int in_function = 0;
 #define YYSTYPE Atributos
 
 
@@ -42,6 +43,30 @@ struct Atributos {
 };
 
 
+string extrair_asm(string s) {
+    size_t inicio = s.find('{');
+    size_t fim = s.find('}', inicio);
+    return s.substr(inicio + 1, fim - inicio - 1);
+}
+
+
+vector<string> tokeniza(string line){
+	vector<string> c;
+	string intr = "";
+
+  for(auto cr : line){
+
+    if(cr == ' '){
+      c.push_back(intr);
+      intr = "";
+    } else {
+      intr += cr;
+    }
+  }
+  c.push_back(intr);
+	return c;
+}
+
 
 vector<string>  insere_tabela_de_simbolos( TipoDecl decl, Atributos id){
     Var variable;
@@ -52,9 +77,6 @@ vector<string>  insere_tabela_de_simbolos( TipoDecl decl, Atributos id){
 
     auto& top_ts = ts.back();   
     auto it = top_ts.find(name);
-    // cout << DeclVar << '\n';
-    // cout << decl << '\n';
-    // cout << (decl == DeclVar)<< '\n';
     if (it == top_ts.end()) {
       top_ts[name] = variable;
       return  vector<string>{ name, "&" };
@@ -81,8 +103,10 @@ void checa_declaracao(Atributos id, bool modificavel){
     }
   }
 
-  cerr << "Variavel '" << name << "' não declarada." << endl;
-  exit( 1 ); 
+  if (!in_function){
+    cerr << "Variavel '" << name << "' não declarada." << endl;
+    exit( 1 ); 
+  }
    
 }
 
@@ -200,7 +224,7 @@ void cmd_for(Atributos& ss, Atributos& s_dec, Atributos& s_cond, Atributos& s_cm
 
 %}
 
-%token ID IF ELSE LET CONST VAR  PRINT FOR WHILE FUNCTION
+%token ID IF ELSE LET CONST VAR  PRINT FOR WHILE FUNCTION ASM BOOLEAN RETURN
 %token CDOUBLE CSTRING CINT
 %token AND OR ME_IG MA_IG DIF IGUAL
 %token MAIS_IGUAL MAIS_MAIS
@@ -222,36 +246,37 @@ S : CMDs { print( resolve_enderecos( $1.c + "."  + funcoes) ); }
 CMDs : CMDs CMD  { $$.c = $1.c + $2.c; };
      | {$$.clear();}
      ;
-     
+
 CMD : CMD_LET ';'
     | CMD_VAR ';'
     | CMD_CONST ';'
     | CMD_IF
+    | E ASM ';'   { $$.c = $1.c + $2.c + "^"; }
     | CMD_WHILE
     | CMD_FOR
     | CMD_FUNC
-    | PRINT E ';' 
-      { $$.c = $2.c + "println" + "#"; }
     | E ';'   { $$.c = $1.c + "^"; }
     | '{' EMPILHA_TS CMDs '}' {ts.pop_back(); $$.c = "<{" + $3.c + "}>";}
     | ';' {$$.clear();}
+    | RETURN E ';' {$$.c = $2.c + "'&retorno'" + "@" +  "~";};
+    // | PRINT E ';'  { $$.c = $2.c + "println" + "#"; }
     ;
- 
-    
+
 EMPILHA_TS : { ts.push_back( map< string, Var >{} ); } 
            ;
 
 CMD_FUNC : FUNCTION ID { insere_tabela_de_simbolos(DeclVar, $2); } 
-             '(' EMPILHA_TS LISTA_PARAMs ')' '{' CMDs '}'
+             '(' EMPILHA_TS LISTA_PARAMs ')' '{' {in_function++;} CMDs '}'
            { 
              string lbl_endereco_funcao = gera_label( "func_" + $2.c[0] );
              string definicao_lbl_endereco_funcao = ":" + lbl_endereco_funcao;
              
              $$.c = $2.c + "&" + $2.c + "{}"  + "=" + "'&funcao'" +
                     lbl_endereco_funcao + "[=]" + "^";
-             funcoes = funcoes + definicao_lbl_endereco_funcao + $6.c + $9.c +
+             funcoes = funcoes + definicao_lbl_endereco_funcao + $6.c + $10.c +
                        "undefined" + "@" + "'&retorno'" + "@"+ "~";
              ts.pop_back(); 
+             in_function--;
            }
          ;
 
@@ -381,7 +406,7 @@ LISTA_ARGs : ARGs
              
 ARGs : ARGs ',' E
        { $$.c = $1.c + $3.c;
-         $$.contador = $1.contador + $3.contador; }
+          $$.contador++; }
      | E
        { $$.c = $1.c;
          $$.contador = 1; }
@@ -395,6 +420,7 @@ U : '-' F {$$.c = "0" + $2.c + $1.c;}
 F :  CDOUBLE
   | '[' ']'             {$$.c = vector<string>{"[]"};}
   | CINT
+  | BOOLEAN
   | CSTRING
   | LVALUE              { checa_declaracao($1, false ); $$.c = $1.c + "@"; } 
   | LVALUEPROP          {$$.c = $1.c + "[@]";}

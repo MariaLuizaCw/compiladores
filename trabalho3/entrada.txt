@@ -1,6 +1,6 @@
-function log (a){
-  print a;
+let teste = 0;
+
+{
+
+    x = 2;
 }
-
-
-log(1);

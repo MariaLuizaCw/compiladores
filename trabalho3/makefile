@@ -1,6 +1,6 @@
 all: tp3 codigo
 	echo "=== Execução ==="
-	./interpreter/interpretador < codigo
+	./new_interpreter/interpretador < codigo
 	
 codigo: tp3 entrada.txt
 	./tp3 < entrada.txt > codigo

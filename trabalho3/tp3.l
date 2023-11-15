@@ -7,6 +7,7 @@ L   	[A-Za-z_]
 INT	    {D}+
 DOUBLE  {D}+"."{D}+([Ee][+\-]?{D}+)?
 ID      {L}({L}|{D})*
+BOOL    "true"|"false"
 
 %%
 
@@ -28,6 +29,12 @@ ID      {L}({L}|{D})*
 ">="	   { return token( MA_IG ); }
 "!="	   { return token( DIF ); }
 "=="	   { return token( IGUAL ); }
+"asm{".*"}"  {  string lexema = extrair_asm(yytext); //trim( yytext + 3, "{}" ); 
+                yylval.c = tokeniza( lexema );
+                coluna += strlen( yytext ); 
+                return ASM; 
+              }
+
 
 "+="       { return token( MAIS_IGUAL ); }
 "++"       { return token( MAIS_MAIS ); }
@@ -35,13 +42,15 @@ ID      {L}({L}|{D})*
 "let"      { return token( LET ); }
 "function" {return token (FUNCTION);}
 "var"      { return token( VAR ); }
-"const"      { return token( CONST ); }
+"const"    { return token( CONST ); }
 "if"       { return token( IF ); }
 "else"     { return token( ELSE ); }
-"print"    { return token( PRINT ); }
 "for"      { return token( FOR ); }
 "while"      { return token( WHILE ); }
+"return"      { return token( RETURN ); }
 
+
+{BOOL}     {return token(BOOLEAN);}
 {ID}       { return token( ID ); }
 
 .          { return token( *yytext ); }
