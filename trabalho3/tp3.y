@@ -259,6 +259,7 @@ CMD : CMD_LET ';'
     | '{' EMPILHA_TS CMDs '}' {ts.pop_back(); $$.c = "<{" + $3.c + "}>";}
     | ';' {$$.clear();}
     | RETURN E ';' {$$.c = $2.c + "'&retorno'" + "@" +  "~";};
+    | RETURN OBJ ';' {$$.c = $2.c + "'&retorno'" + "@" +  "~";};
     // | PRINT E ';'  { $$.c = $2.c + "println" + "#"; }
     ;
 
@@ -352,7 +353,17 @@ PARAM : ID
       }
     ;
 
+OBJ : '{' '}' {$$.c = vector<string>{"{}"};}
+    | '{' CAMPOS '}' {$$.c = vector<string>{"{}"} + $2.c;}
+    ;
 
+CAMPOS : CAMPO ',' CAMPOS {$$.c = $1.c + "[<=]" + $3.c;}
+       | CAMPO {$$.c = $1.c + "[<=]";}
+       ;
+
+CAMPO : ID ':' E {$$.c = $1.c + $3.c;}
+      | ID ':' OBJ {$$.c = $1.c + $3.c;}
+      ;    
 
 CMD_FOR : FOR '(' PRIM_E ';' E ';' E ')' CMD  { cmd_for($$, $3, $5, $9, $7); }
         ;
@@ -372,7 +383,7 @@ LET_VARs : LET_VAR ',' LET_VARs { $$.c = $1.c + $3.c; }
 
 LET_VAR : ID                    {$$.c = insere_tabela_de_simbolos( DeclLet, $1 ); }
         | ID '=' E              {$$.c = insere_tabela_de_simbolos( DeclLet, $1 ) + $1.c + $3.c + "=" + "^"; }
-        | ID '=' '{' '}'        {$$.c = insere_tabela_de_simbolos( DeclLet, $1 ) +  $1.c +  vector<string>{"{}"} + "=" + "^"; } 
+        | ID '=' OBJ        {$$.c = insere_tabela_de_simbolos( DeclLet, $1 ) +  $1.c + $3.c + "=" + "^"; } 
         ;
     
 CMD_VAR : VAR VAR_VARs { $$.c = $2.c; }
@@ -384,7 +395,7 @@ VAR_VARs : VAR_VAR ',' VAR_VARs { $$.c = $1.c + $3.c; }
 
 VAR_VAR : ID                    {$$.c = insere_tabela_de_simbolos( DeclVar, $1 ); }
         | ID '=' E              {$$.c = insere_tabela_de_simbolos( DeclVar, $1 ) + $1.c + $3.c + "=" + "^"; }
-        | ID '=' '{' '}'        {$$.c = insere_tabela_de_simbolos( DeclVar, $1 ) + $1.c +  "{}" + "=" + "^"; } 
+        | ID '=' OBJ            {$$.c = insere_tabela_de_simbolos( DeclVar, $1 ) + $1.c + $3.c + "=" + "^"; } 
         ;
 
 CMD_CONST: CONST CONST_VARs { $$.c = $2.c; }
@@ -408,9 +419,9 @@ CMD_WHILE : WHILE '(' E ')' CMD   {  cmd_while($$, $3, $5);  }
           ;
 
 E : LVALUE '=' E              { checa_declaracao($1, true); $$.c = $1.c + $3.c + "="; }
-  | LVALUE '=' '{' '}'        { checa_declaracao($1, true); $$.c = $1.c + vector<string>{"{}"} + "="; } 
+  | LVALUE '=' OBJ            { checa_declaracao($1, true); $$.c = $1.c + $3.c + "="; } 
   | LVALUEPROP '=' E          { checa_declaracao($1, true); $$.c = $1.c + $3.c + "[=]"; }
-  | LVALUEPROP '=' '{' '}'    { checa_declaracao($1, true); $$.c = $1.c + vector<string>{"{}"} + "[=]"; }
+  | LVALUEPROP '=' OBJ        { checa_declaracao($1, true); $$.c = $1.c + $3.c + "[=]"; }
   | LVALUE MAIS_IGUAL E       { checa_declaracao($1, true); $$.c = $1.c + $1.c +  "@" + $3.c +  "+" + "=";}
   | LVALUEPROP MAIS_IGUAL E   { checa_declaracao($1, true); $$.c = $1.c + $1.c +  "[@]" + $3.c +  "+" + "[=]";}
   | LVALUE MAIS_MAIS          { 
@@ -428,9 +439,22 @@ E : LVALUE '=' E              { checa_declaracao($1, true); $$.c = $1.c + $3.c +
     {
       $$.c = $3.c + to_string( $3.contador ) + $1.c + "$";
     }
+  | '[' LISTA_ELEMENTOS ']' {$$.c = vector<string>{"[]"} + $2.c;}
   | U
   ;
 
+
+LISTA_ELEMENTOS : ELEMENTOS
+           | { $$.clear(); }
+           ;
+             
+ELEMENTOS : ELEMENTOS ',' E { $$.contador++; $$.c =  $1.c + to_string( $$.contador ) + $3.c + "[<=]";}
+          | ELEMENTOS ',' OBJ { $$.contador++; $$.c =  $1.c + to_string( $$.contador ) + $3.c + "[<=]";}
+          | E {$$.c = to_string( $$.contador ) + $1.c + "[<=]";}
+          | OBJ  {$$.c = to_string( $$.contador ) + $1.c + "[<=]";}
+          ;
+          
+       
 
 LISTA_ARGs : ARGs
            | { $$.clear(); }
@@ -453,7 +477,6 @@ U : '-' F {$$.c = "0" + $2.c + $1.c;}
   ;
 
 F :  CDOUBLE
-  | '[' ']'             {$$.c = vector<string>{"[]"};}
   | CINT
   | BOOLEAN
   | CSTRING

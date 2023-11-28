@@ -1,19 +1,18 @@
-function log( msg = 'Default!', pular_linha = f() ) {
-  if( pular_linha )
-    msg asm{println # undefined};
-  else
-    msg asm{print # undefined};
+function log( msg ) {
+  msg asm{println # undefined};
 }
 
-function f( a = f( 1 ) ) {
-  log( 'Parametro a: ', false ); log( ' ', false ); log( a, true );
-  if( a == true )
-    return false;
-  else
-    return a == 1;
+function criaObj() {
+  return { a : [ {}, { teste: 1 }, c=24*8+1 ], b: 'nome'};
 }
 
-log( f() );
-log( ' ', true );
-log( f( 2 ), true );
-let a = f();
+let obj = [];
+let c;
+{ 
+obj = criaObj();
+let c = [];
+
+log( obj );
+log( obj.a );
+log( obj.a[obj.a[1].teste+1] );
+}
