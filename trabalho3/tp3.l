@@ -46,9 +46,10 @@ BOOL    "true"|"false"
 "if"       { return token( IF ); }
 "else"     { return token( ELSE ); }
 "for"      { return token( FOR ); }
-"while"      { return token( WHILE ); }
-"return"      { return token( RETURN ); }
-
+"while"    { return token( WHILE ); }
+"return"   { return token( RETURN ); }
+")"/.*"=>" {return token(PARENTESES_FUNCAO);}
+"=>"        {return token(SETA);}
 {BOOL}     {return token(BOOLEAN);}
 {ID}       { return token( ID ); }
 

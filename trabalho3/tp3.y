@@ -227,9 +227,9 @@ void cmd_for(Atributos& ss, Atributos& s_dec, Atributos& s_cond, Atributos& s_cm
 %token ID IF ELSE LET CONST VAR  PRINT FOR WHILE FUNCTION ASM  RETURN
 %token CDOUBLE CSTRING CINT UNDEFINED BOOLEAN
 %token AND OR ME_IG MA_IG DIF IGUAL
-%token MAIS_IGUAL MAIS_MAIS
+%token MAIS_IGUAL MAIS_MAIS SETA PARENTESES_FUNCAO
 
-%right '='
+%right '=' SETA
 %nonassoc IGUAL MAIS_IGUAL  MAIS_MAIS
 %nonassoc '<' '>'
 %left '+' '-'
@@ -280,6 +280,24 @@ CMD_FUNC : FUNCTION ID { insere_tabela_de_simbolos(DeclVar, $2);  in_function++;
              in_function--;
            }
          ;
+
+FUNC_ANON : FUNCTION { in_function++;} 
+             '('  EMPILHA_TS LISTA_PARAMs ')' '{'  CMDs '}'
+           { 
+             string lbl_endereco_funcao = gera_label( "funcanon" );
+             string definicao_lbl_endereco_funcao = ":" + lbl_endereco_funcao;
+             
+             $$.c =  vector<string>{"{}"} + "'&funcao'" +
+                    lbl_endereco_funcao + "[<=]";
+             funcoes = funcoes + definicao_lbl_endereco_funcao + $5.c + $8.c +
+                       "undefined" + "@" + "'&retorno'" + "@"+ "~";
+             ts.pop_back(); 
+             in_function--;
+           }
+         ;
+
+
+
 
 LISTA_PARAMs : PARAMs
            | { $$.clear(); }
@@ -418,13 +436,13 @@ CMD_IF : IF '(' E ')' CMD           { cmd_if_no_else($$, $3, $5); }
 CMD_WHILE : WHILE '(' E ')' CMD   {  cmd_while($$, $3, $5);  }
           ;
 
-E : LVALUE '=' E              { checa_declaracao($1, true); $$.c = $1.c + $3.c + "="; }
-  | LVALUE '=' OBJ            { checa_declaracao($1, true); $$.c = $1.c + $3.c + "="; } 
+E : ID '=' E              { checa_declaracao($1, true); $$.c = $1.c + $3.c + "="; }
+  | ID '=' OBJ            { checa_declaracao($1, true); $$.c = $1.c + $3.c + "="; } 
   | LVALUEPROP '=' E          { checa_declaracao($1, true); $$.c = $1.c + $3.c + "[=]"; }
   | LVALUEPROP '=' OBJ        { checa_declaracao($1, true); $$.c = $1.c + $3.c + "[=]"; }
-  | LVALUE MAIS_IGUAL E       { checa_declaracao($1, true); $$.c = $1.c + $1.c +  "@" + $3.c +  "+" + "=";}
+  | ID MAIS_IGUAL E       { checa_declaracao($1, true); $$.c = $1.c + $1.c +  "@" + $3.c +  "+" + "=";}
   | LVALUEPROP MAIS_IGUAL E   { checa_declaracao($1, true); $$.c = $1.c + $1.c +  "[@]" + $3.c +  "+" + "[=]";}
-  | LVALUE MAIS_MAIS          { 
+  | ID MAIS_MAIS          { 
                                  $$.c = $1.c + "@" +  $1.c + $1.c + "@" + vector<string>{"1"} + vector<string>{"+"} + vector<string>{"="} + "^"; 
                               }
   | E '<' E                   { $$.c = $1.c + $3.c + $2.c; }
@@ -435,11 +453,25 @@ E : LVALUE '=' E              { checa_declaracao($1, true); $$.c = $1.c + $3.c +
   | E '/' E                   { $$.c = $1.c + $3.c + $2.c; }
   | E '%' E                   { $$.c = $1.c + $3.c + $2.c; }
   | E IGUAL E                 { $$.c = $1.c + $3.c + $2.c; }
+  | FUNC_ANON
+  | '(' E ')'                 { $$.c = $2.c; }
   | E '(' LISTA_ARGs ')'
     {
       $$.c = $3.c + to_string( $3.contador ) + $1.c + "$";
     }
   | '[' LISTA_ELEMENTOS ']' {$$.c = vector<string>{"[]"} + $2.c;}
+  | ID {ts.push_back( map< string, Var >{});  insere_tabela_de_simbolos(DeclLet, $1); in_function++;} SETA E 
+    { 
+      string lbl_endereco_funcao = gera_label( "funcanon" );
+      string definicao_lbl_endereco_funcao = ":" + lbl_endereco_funcao;
+      vector<string>arg =  $1.c + "&" + $1.c + "arguments" + "@" + "0" + "[@]" + "=" + "^";
+      $$.c = vector<string>{"{}"} + "'&funcao'" + lbl_endereco_funcao + "[<=]";
+      funcoes = funcoes + definicao_lbl_endereco_funcao + arg + $4.c + "'&retorno'" + "@" + "~";
+      ts.pop_back(); 
+      in_function--;
+    }
+  | '(' LISTA_PARAMs EMPILHA_TS PARENTESES_FUNCAO SETA E 
+    { ts.pop_back(); }
   | U
   ;
 
@@ -480,13 +512,10 @@ F :  CDOUBLE
   | CINT
   | BOOLEAN
   | CSTRING
-  | LVALUE              { checa_declaracao($1, false ); $$.c = $1.c + "@"; } 
+  | ID              { checa_declaracao($1, false ); $$.c = $1.c + "@"; } 
   | LVALUEPROP          {$$.c = $1.c + "[@]";}
-  | '(' E ')'           { $$.c = $2.c; }
   ;
 
-LVALUE : ID 
-       ;
        
 LVALUEPROP : F '[' E ']' { $$.c = $1.c + $3.c;}
            | F '.' ID    { $$.c = $1.c + $3.c;}

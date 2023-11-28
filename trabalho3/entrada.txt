@@ -1,18 +1,8 @@
-function log( msg ) {
-  msg asm{println # undefined};
-}
+let par = function( n ) {
+  if( n % 2 == 0 )
+    return true;
+  else
+    return false;
+};
 
-function criaObj() {
-  return { a : [ {}, { teste: 1 }, c=24*8+1 ], b: 'nome'};
-}
-
-let obj = [];
-let c;
-{ 
-obj = criaObj();
-let c = [];
-
-log( obj );
-log( obj.a );
-log( obj.a[obj.a[1].teste+1] );
-}
+let a = par( 5 );
