@@ -49,6 +49,7 @@ BOOL    "true"|"false"
 "while"    { return token( WHILE ); }
 "return"   { return token( RETURN ); }
 ")"/.*"=>" {return token(PARENTESES_FUNCAO);}
+"=>"[ \n\s\t]*"{"  {return token(SETA_CHAVE);}
 "=>"        {return token(SETA);}
 {BOOL}     {return token(BOOLEAN);}
 {ID}       { return token( ID ); }

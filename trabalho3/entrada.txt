@@ -1,8 +1,2 @@
-let par = function( n ) {
-  if( n % 2 == 0 )
-    return true;
-  else
-    return false;
-};
-
-let a = par( 5 );
+let f = x => y => x*y;
+let b = f(9);

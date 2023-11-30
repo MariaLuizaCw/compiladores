@@ -1,1 +1,1 @@
-par & par {} '&funcao' 20 [<=] = ^ a & a 5 1 par @ $ = ^ . n & n arguments @ 0 [@] = ^ n @ 2 % 0 == 43 ? false '&retorno' @ ~ 47 # true '&retorno' @ ~ undefined @ '&retorno' @ ~ 
+f & f {} '&funcao' 37 [<=] = ^ b & b 9 1 f @ $ = ^ . y & y arguments @ 0 [@] = ^ x @ y @ * '&retorno' @ ~ x & x arguments @ 0 [@] = ^ {} '&funcao' 20 [<=] '&retorno' @ ~ 
